@@ -14,6 +14,7 @@ class ViewController: UITableViewController {
     
     var filtered = [Petition]()
     var isFiltered: Bool = false
+    var filterString: String = ""
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -22,6 +23,11 @@ class ViewController: UITableViewController {
         navigationController?.navigationBar.topItem?.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .bookmarks, target: self, action: #selector(showCredits))
         navigationController?.navigationBar.topItem?.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .compose, target: self, action: #selector(showFilter))
         
+        performSelector(inBackground: #selector(fetchJSON), with: nil)
+        
+    }
+    
+    @objc func fetchJSON() {
         let urlString: String
         
         if navigationController?.tabBarItem.tag == 0 {
@@ -36,8 +42,7 @@ class ViewController: UITableViewController {
                 return
             }
         }
-        
-        showError()
+        performSelector(onMainThread: #selector(showError), with: nil, waitUntilDone: false)
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -65,7 +70,9 @@ class ViewController: UITableViewController {
         
         if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
             petitions = jsonPetitions.results
-            tableView.reloadData()
+            tableView.performSelector(onMainThread: #selector(UITableView.reloadData), with: nil, waitUntilDone: false)
+        } else {
+            performSelector(onMainThread: #selector(showError), with: nil, waitUntilDone: false)
         }
     }
     
@@ -75,10 +82,10 @@ class ViewController: UITableViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
     
-    func showError() {
-        let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed. Please try again", preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "Ok", style: .default))
-        present(ac, animated:true)
+    @objc func showError() {
+            let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed. Please try again", preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "Ok", style: .default))
+            present(ac, animated:true)
     }
     
     @objc func showCredits() {
